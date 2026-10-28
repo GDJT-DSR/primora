@@ -31,14 +31,14 @@ void bi_copy(unsigned *dest, const unsigned *src, unsigned s)
 void bi_random(unsigned *val, bi_size size)
 {
     static mt19937_t *m = &bi_rand;
-    for (unsigned i = 0; i <= size.limb; ++i)
+    for (unsigned i = 0; i < size.limb; ++i)
     {
         // val[i] =
         // (unsigned)((rand() & 0xff) | ((rand() & 0xff) << 8) | ((rand() & 0xff) << 16) | ((rand() & 0xff) << 24));
         val[i] = mt19937_gen(m);
     }
-    unsigned mask = (1u << size.bits) - 1;
-    val[size.limb] &= mask;
+    if (size.bits)
+        val[size.limb] = mt19937_gen(m) & ((1u << size.bits) - 1);
 }
 bi_size bi_get_size(const unsigned *val, unsigned size)
 {
@@ -209,6 +209,8 @@ int bi_cmp(const unsigned *l, const unsigned *r, unsigned s)
 }
 void bi_rshift(unsigned *val, bi_size shift, unsigned size)
 {
+    if (shift.limb == 0 && shift.bits == 0)
+        return;
     // a[i] = a[i + l] >> b | a[i + l + 1] << (32-b);
     if (shift.bits == 32)
     {

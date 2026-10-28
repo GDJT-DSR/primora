@@ -10,6 +10,7 @@ unsigned *mont_ione;
 unsigned mont_n0inv; // -N^{-1} mod 2^32
 unsigned mont_size;  // R = 2^(32*mont_size)
 bi_size mont_detail;
+unsigned *mont_square_tmp;
 
 void mont_init(unsigned *n, unsigned size)
 {
@@ -51,6 +52,7 @@ void mont_init(unsigned *n, unsigned size)
     mont_ione = bi_clone(mont_n, mont_size);
     bi_sub(mont_ione, mont_one, mont_size);
     // mont_n[mont_detail.limb] |= 1u << (mont_detail.bits);
+    mont_square_tmp = bi_create(2 * mont_size + 1);
 }
 
 void mont_redc(unsigned *val)
@@ -94,14 +96,14 @@ void mont_mul(unsigned *l, unsigned *r, unsigned *res)
 
 void mont_square(unsigned *a)
 {
-    unsigned *tmp = bi_create(2 * mont_size + 1);
+    unsigned *tmp = mont_square_tmp;
+    bi_zero(tmp, 2 * mont_size + 1);
     bi_square(a, mont_size, tmp, 2 * mont_size + 1);
     mont_redc(tmp);
     for (unsigned i = 0; i < mont_size; ++i)
     {
         a[i] = tmp[i];
     }
-    free(tmp);
 }
 void mont_pow(unsigned *a, unsigned *b, unsigned size)
 {
@@ -109,6 +111,12 @@ void mont_pow(unsigned *a, unsigned *b, unsigned size)
     size *= ITEM_SIZE;
     unsigned *tmp = bi_clone(a, mont_size);
     unsigned *res = bi_create(2 * mont_size + 1);
+    // 处理a > n的情况
+    if (bi_cmp(a, mont_n, mont_size) >= 0)
+    {
+        mont_mul(a, mont_one, res);
+        bi_copy(a, res, mont_size);
+    }
     bi_copy(a, mont_one, mont_size);
     for (unsigned i = 0; i < size; ++i, mont_square(tmp))
     {
@@ -126,7 +134,14 @@ void mont_pow(unsigned *a, unsigned *b, unsigned size)
 
 void mont_clean(void)
 {
-    free(mont_n_comp);
-    free(mont_one);
-    free(mont_ione);
+#define FREE_AND_CLEAR(v)                                                                                              \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        free((v));                                                                                                     \
+        (v) = NULL;                                                                                                    \
+    } while (0)
+    FREE_AND_CLEAR(mont_n_comp);
+    FREE_AND_CLEAR(mont_one);
+    FREE_AND_CLEAR(mont_ione);
+    FREE_AND_CLEAR(mont_square_tmp);
 }

@@ -6,7 +6,6 @@
 
 int main(int argc, char *argv[])
 {
-    mt19937_init(&bi_rand, (unsigned)time(NULL));
 
     if (argc <= 1)
     {
@@ -18,7 +17,7 @@ int main(int argc, char *argv[])
         unsigned digs = 0;
         if (argc <= 2)
         {
-            printf("need digs.\n");
+            printf("需要位数.\n");
             return 2;
         }
         sscanf(argv[2], "%u", &digs);
@@ -27,6 +26,10 @@ int main(int argc, char *argv[])
             printf("不支持的长度: %u，需要2~4096", digs);
             return 2;
         }
+        unsigned seed = (unsigned)time(NULL);
+        if (argc >= 4)
+            sscanf(argv[2], "%u", &seed);
+        mt19937_init(&bi_rand, seed);
         unsigned *val = gen(digs);
         printf("\n\nResult:\n");
         bi_print_hex(val, (bi_size){.limb = digs / 8, .bits = 4 * (digs % 8)});
@@ -35,6 +38,7 @@ int main(int argc, char *argv[])
     }
     if (str_eq(argv[1], "verify"))
     {
+        mt19937_init(&bi_rand, (unsigned)time(NULL));
         unsigned *val = NULL;
         unsigned size = 0;
         if (argc >= 3)
@@ -44,7 +48,8 @@ int main(int argc, char *argv[])
             char buf[32768];
             if (!fgets(buf, sizeof(buf), stdin))
             {
-                printf("数据过长，拒绝处理\n");
+                printf("读取失败\n");
+                return 2;
             }
             for (char *p = buf; p; ++p)
             {
