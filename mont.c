@@ -105,22 +105,24 @@ void mont_square(unsigned *a)
         a[i] = tmp[i];
     }
 }
-void mont_pow(unsigned *a, unsigned *b, unsigned size)
+void mont_pow(unsigned *a, unsigned *b, unsigned size, unsigned shift)
 {
-    size = bi_get_size(b, size).limb + 1;
-    size *= ITEM_SIZE;
+    bi_size bs = bi_get_size(b, size);
+    unsigned nbits = bs.limb * ITEM_SIZE + bs.bits - shift;
+    // size = bi_get_size(b, size).limb + 1;
+    // size *= ITEM_SIZE;
     unsigned *tmp = bi_clone(a, mont_size);
     unsigned *res = bi_create(2 * mont_size + 1);
     // 处理a > n的情况
     if (bi_cmp(a, mont_n, mont_size) >= 0)
     {
         mont_mul(a, mont_one, res);
-        bi_copy(a, res, mont_size);
+        bi_copy(tmp, res, mont_size);
     }
     bi_copy(a, mont_one, mont_size);
-    for (unsigned i = 0; i < size; ++i, mont_square(tmp))
+    for (unsigned i = 0; i < nbits; ++i, mont_square(tmp))
     {
-        if (!bi_bit(b, i))
+        if (!bi_bit(b, i + shift))
             continue;
         bi_zero(res, 2 * mont_size + 1);
         bi_mul(a, mont_size, tmp, mont_size, res, 2 * mont_size);

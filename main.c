@@ -2,6 +2,7 @@
 #include "test.h"
 #include "utils.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 
 int main(int argc, char *argv[])
@@ -36,6 +37,7 @@ int main(int argc, char *argv[])
         printf("\n\nResult:\n");
         bi_print_hex(val, (bi_size){.limb = digs / 8, .bits = 4 * (digs % 8)});
         printf("\n");
+        free(val);
         return 0;
     }
     if (str_eq(argv[1], "verify"))
@@ -70,6 +72,7 @@ int main(int argc, char *argv[])
         }
         int res = test(val, size);
         printf(res ? "可能是素数\n" : "合数\n");
+        free(val);
         return !res;
     }
 

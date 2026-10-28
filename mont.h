@@ -21,7 +21,7 @@ void mont_mul(unsigned *l, unsigned *r, unsigned *res);
 void mont_square(unsigned *a);
 
 // len(a) = mont_n_size, 传入len(b)
-void mont_pow(unsigned *a, unsigned *b, unsigned size);
+void mont_pow(unsigned *a, unsigned *b, unsigned size, unsigned shift);
 
 void mont_clean(void);
 

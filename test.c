@@ -39,7 +39,7 @@ int test(unsigned *val, unsigned size)
     tmp[0] ^= 1u;
     bi_size end0_size = bi_end0(tmp, size);
     unsigned count = end0_size.bits + end0_size.limb * ITEM_SIZE;
-    bi_rshift(tmp, end0_size, size);
+    // bi_rshift(tmp, end0_size, size);
 
     unsigned *ar = bi_create(2 * mont_size + 1);
     unsigned *a = bi_create(2 * mont_size + 1);
@@ -50,11 +50,11 @@ int test(unsigned *val, unsigned size)
             bi_random(ar, (bi_size){.limb = mont_size, .bits = 0});
             bi_copy(a, ar, mont_size);
             mont_redc(a);
-        } while (bi_cmp(a, mont_n, mont_size) >= 0 || a[0] < 2);
-        printf("test%03u: a=", t);
+        } while (bi_cmp(a, tmp, mont_size) >= 0 || a[0] < 2);
+        printf("test%u: a=", t);
         bi_print_hex(a, (bi_size){.limb = mont_size, .bits = 0});
         putchar('\n');
-        mont_pow(ar, tmp, size - end0_size.limb);
+        mont_pow(ar, tmp, size, count);
         if (!bi_cmp(ar, mont_one, mont_size) || !bi_cmp(ar, mont_ione, mont_size))
             goto end_for;
         for (unsigned i = 1; i < count; ++i)
@@ -76,11 +76,13 @@ int test(unsigned *val, unsigned size)
     free(ar);
     free(tmp);
     free(a);
+    mont_clean();
     return 1;
 end_no:
     free(ar);
     free(tmp);
     free(a);
+    mont_clean();
     return 0;
 }
 

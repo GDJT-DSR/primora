@@ -217,26 +217,28 @@ void bi_rshift(unsigned *val, bi_size shift, unsigned size)
         shift.bits = 0;
         ++shift.limb;
     }
+    if (shift.limb >= size)
+    {
+        bi_zero(val, size);
+        return;
+    }
+    unsigned n = size - shift.limb;
     if (shift.bits == 0)
     {
-        for (unsigned i = 0; i < size - shift.limb; ++i)
-        {
+        for (unsigned i = 0; i < n; ++i)
             val[i] = val[i + shift.limb];
-        }
         for (unsigned i = size - shift.limb; i < size; ++i)
-        {
             val[i] = 0;
-        }
     }
     else
     {
-        for (unsigned i = 0; i < (size - shift.limb - 1); ++i)
+        for (unsigned i = 0; i < (n - 1); ++i)
         {
             val[i] = (val[i + shift.limb] >> shift.bits) | (val[i + shift.limb + 1] << (32 - shift.bits));
         }
         // 单独处理i+l-1
-        val[size - shift.limb - 1] = val[size - 1] >> shift.bits;
-        for (unsigned i = size - shift.limb; i < size; ++i)
+        val[n - 1] = val[size - 1] >> shift.bits;
+        for (unsigned i = n; i < size; ++i)
         {
             val[i] = 0;
         }
