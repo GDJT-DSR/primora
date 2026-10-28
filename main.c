@@ -27,8 +27,10 @@ int main(int argc, char *argv[])
             return 2;
         }
         unsigned seed = (unsigned)time(NULL);
-        if (argc >= 4)
-            sscanf(argv[2], "%u", &seed);
+        if (argc >= 4 && sscanf(argv[3], "%u", &seed) != 1)
+        {
+            printf("seed参数错误\n");
+        }
         mt19937_init(&bi_rand, seed);
         unsigned *val = gen(digs);
         printf("\n\nResult:\n");
@@ -51,7 +53,7 @@ int main(int argc, char *argv[])
                 printf("读取失败\n");
                 return 2;
             }
-            for (char *p = buf; p; ++p)
+            for (char *p = buf; *p; ++p)
             {
                 if (*p == '\n' || *p == ' ' || *p == '\t' || *p == '\r')
                 {

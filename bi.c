@@ -222,7 +222,10 @@ void bi_rshift(unsigned *val, bi_size shift, unsigned size)
         for (unsigned i = 0; i < size - shift.limb; ++i)
         {
             val[i] = val[i + shift.limb];
-            val[i + shift.limb] = 0;
+        }
+        for (unsigned i = size - shift.limb; i < size; ++i)
+        {
+            val[i] = 0;
         }
     }
     else
