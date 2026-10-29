@@ -11,6 +11,7 @@ unsigned mont_n0inv; // -N^{-1} mod 2^32
 unsigned mont_size;  // R = 2^(32*mont_size)
 bi_size mont_detail;
 unsigned *mont_square_tmp;
+#define WINDOW_SIZE 5
 
 void mont_init(unsigned *n, unsigned size)
 {
@@ -21,10 +22,11 @@ void mont_init(unsigned *n, unsigned size)
     mont_detail = bi_get_size(n, size);
 
     mont_n = n;
-    mont_size = mont_detail.limb + (mont_detail.bits != 0);
+    unsigned ms = mont_detail.limb + (mont_detail.bits != 0);
+    mont_size = ms;
 
-    mont_n_comp = bi_clone(mont_n, mont_size);
-    bi_comp(mont_n_comp, mont_size);
+    mont_n_comp = bi_clone(mont_n, ms);
+    bi_comp(mont_n_comp, ms);
 
     mont_n0inv = 1;
     mont_n0inv *= 2u + n[0] * mont_n0inv;
@@ -40,51 +42,51 @@ void mont_init(unsigned *n, unsigned size)
     32-b次double_mod
     */
 
-    mont_one = bi_clone(mont_n_comp, mont_size);
+    mont_one = bi_clone(mont_n_comp, ms);
     if (mont_detail.bits != 0)
     {
         mont_one[mont_detail.limb] &= (1u << mont_detail.bits) - 1;
         for (unsigned j = 0; j < 32 - mont_detail.bits; ++j)
         {
-            bi_double_mod(mont_one, mont_n, mont_n_comp, mont_size);
+            bi_double_mod(mont_one, mont_n, mont_n_comp, ms);
         }
     }
-    mont_ione = bi_clone(mont_n, mont_size);
-    bi_sub(mont_ione, mont_one, mont_size);
+    mont_ione = bi_clone(n, ms);
+    bi_sub(mont_ione, mont_one, ms);
     // mont_n[mont_detail.limb] |= 1u << (mont_detail.bits);
-    mont_square_tmp = bi_create(2 * mont_size + 1);
+    mont_square_tmp = bi_create(2 * ms + 1);
 }
 
 void mont_redc(unsigned *val)
 {
-
-    for (unsigned i = 0; i < mont_size; ++i)
+    unsigned ms = mont_size;
+    for (unsigned i = 0; i < ms; ++i)
     {
         // m = T[i] * (-n^{-1}) mod 2^32
         unsigned m = val[i] * mont_n0inv;
         unsigned long long car = 0;
 
-        for (unsigned j = 0; j < mont_size; ++j)
+        for (unsigned j = 0; j < ms; ++j)
         {
             car += (unsigned long long)m * mont_n[j] + val[i + j];
             val[i + j] = (unsigned)car;
             car >>= ITEM_SIZE;
         }
 
-        unsigned k = i + mont_size;
-        for (; car && k < mont_size * 2 + 1; ++k)
+        unsigned k = i + ms;
+        for (; car && k < ms * 2 + 1; ++k)
         {
             unsigned long long cur = (unsigned long long)val[k] + car;
             val[k] = (unsigned)cur;
             car = cur >> ITEM_SIZE;
         }
     }
-    bi_rshift(val, (bi_size){.limb = mont_size, .bits = 0}, 2 * mont_size + 1);
-    if (val[mont_size] || bi_cmp(val, mont_n, mont_size) >= 0)
+    bi_rshift(val, (bi_size){.limb = ms, .bits = 0}, 2 * ms + 1);
+    if (val[ms] || bi_cmp(val, mont_n, ms) >= 0)
     {
-        // val[mont_size] = !bi_sub(val, mont_n, mont_size);
-        bi_add(val, mont_n_comp, mont_size);
-        val[mont_size] = 0;
+        // val[ms] = !bi_sub(val, mont_n, ms);
+        bi_add(val, mont_n_comp, ms);
+        val[ms] = 0;
     }
 }
 
@@ -107,31 +109,92 @@ void mont_square(unsigned *a)
 }
 void mont_pow(unsigned *a, unsigned *b, unsigned size, unsigned shift)
 {
+    unsigned ms = mont_size;
     bi_size bs = bi_get_size(b, size);
+    if (bs.limb * ITEM_SIZE + bs.bits <= shift)
+    {
+        bi_copy(a, mont_one, ms);
+        return;
+    }
     unsigned nbits = bs.limb * ITEM_SIZE + bs.bits - shift;
+    static unsigned table_count = 1 << (WINDOW_SIZE - 1);
+    unsigned *table = bi_create(table_count * ms);
     // size = bi_get_size(b, size).limb + 1;
     // size *= ITEM_SIZE;
-    unsigned *tmp = bi_clone(a, mont_size);
-    unsigned *res = bi_create(2 * mont_size + 1);
+    unsigned *res = bi_create(2 * ms + 1);
+    unsigned *a2 = bi_create(2 * ms + 1);
     // 处理a > n的情况
-    if (bi_cmp(a, mont_n, mont_size) >= 0)
+    if (bi_cmp(a, mont_n, ms) >= 0)
     {
         mont_mul(a, mont_one, res);
-        bi_copy(tmp, res, mont_size);
+        bi_copy(table, res, ms);
     }
-    bi_copy(a, mont_one, mont_size);
-    for (unsigned i = 0; i < nbits; ++i, mont_square(tmp))
+    else
     {
-        if (!bi_bit(b, i + shift))
-            continue;
-        bi_zero(res, 2 * mont_size + 1);
-        bi_mul(a, mont_size, tmp, mont_size, res, 2 * mont_size);
-        mont_redc(res);
-        bi_copy(a, res, mont_size);
+        bi_copy(table, a, ms);
     }
 
+    // 滑动窗口预计算 a a^3 a^5 ...
+    bi_copy(a2, table, ms);
+    mont_square(a2);
+    for (unsigned i = 1; i < table_count; ++i)
+    {
+        unsigned *dst = table + i * ms;
+        bi_zero(res, 2 * ms + 1);
+        mont_mul(dst - ms, a2, res);
+        bi_copy(dst, res, ms);
+    }
+
+    bi_copy(a, mont_one, ms);
+    for (int high = (int)nbits - 1; high >= 0;)
+    {
+        unsigned pos = (unsigned)high + shift;
+        if (!bi_bit(b, pos))
+        {
+            mont_square(a);
+            --high;
+            continue;
+        }
+
+        int low = high - WINDOW_SIZE + 1;
+        if (low < 0)
+            low = 0;
+
+        // 缩短窗口使得最后一位是1
+        while (!bi_bit(b, (unsigned)low + shift))
+            ++low;
+
+        int len = high - low + 1;
+        unsigned val = 1;
+        for (int k = high - 1; k >= low; --k)
+        {
+            val <<= 1;
+            val |= bi_bit(b, (unsigned)k + shift);
+        }
+        for (int k = 0; k < len; ++k)
+        {
+            mont_square(a);
+        }
+        bi_zero(res, 2 * ms + 1);
+        mont_mul(a, table + (val >> 1) * ms, res);
+        bi_copy(a, res, ms);
+
+        high = low - 1;
+    }
+
+    // for (unsigned i = 0; i < nbits; ++i, mont_square(tmp))
+    // {
+    //     if (!bi_bit(b, i + shift))
+    //         continue;
+    //     bi_zero(res, 2 * ms + 1);
+    //     bi_mul(a, ms, tmp, ms, res, 2 * ms);
+    //     mont_redc(res);
+    //     bi_copy(a, res, ms);
+    // }
     free(res);
-    free(tmp);
+    free(table);
+    free(a2);
+    // free(tmp);
 }
 
 void mont_clean(void)
