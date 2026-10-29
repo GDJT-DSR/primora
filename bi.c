@@ -150,15 +150,15 @@ void bi_mul(const unsigned *l, unsigned ls, const unsigned *r, unsigned rs, unsi
 }
 void bi_square(const unsigned *a, unsigned sa, unsigned *r, unsigned sr)
 {
-
     typedef unsigned long long uli;
     uli car = 0;
     // 计算交叉项
     for (unsigned i = 0; i < sa; ++i)
     {
+        uli ai = a[i];
         for (unsigned int j = i + 1; j < sa; ++j)
         {
-            car += (uli)a[i] * a[j] + r[i + j];
+            car += ai * a[j] + r[i + j];
             r[i + j] = (unsigned)car;
             car >>= ITEM_SIZE;
         }
