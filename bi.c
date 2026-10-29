@@ -77,14 +77,19 @@ void bi_print_hex(const unsigned *val, bi_size size)
     static char bitset[] = "0123456789abcdef";
     printf("0x");
     unsigned time = (size.bits + 3) / 4;
+    char buf[8 * size.limb + 9];
+    unsigned i = 0;
     do
     {
         while (time-- > 0)
         {
-            putchar(bitset[(val[size.limb] >> (4 * time)) & 0xf]);
+            // putchar(bitset[(val[size.limb] >> (4 * time)) & 0xf]);
+            buf[i++] = bitset[(val[size.limb] >> (4 * time)) & 0xf];
         }
         time = 8;
     } while (size.limb-- > 0);
+    buf[i] = '\0';
+    puts(buf);
 }
 void bi_comp(unsigned *val, unsigned size)
 {
@@ -177,7 +182,7 @@ void bi_square(const unsigned *a, unsigned sa, unsigned *r, unsigned sr)
     }
 
     // 处理平方项
-    for (unsigned i = 0; i < sa && 2 * i < sr; ++i)
+    for (unsigned i = 0; i < sa; ++i)
     {
         car = (uli)a[i] * a[i] + r[2 * i];
         r[2 * i] = (unsigned)car;

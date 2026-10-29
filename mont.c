@@ -62,14 +62,15 @@ void mont_redc(unsigned *val)
     unsigned ms = mont_size;
     for (unsigned i = 0; i < ms; ++i)
     {
+        unsigned *v = val + i;
         // m = T[i] * (-n^{-1}) mod 2^32
         unsigned m = val[i] * mont_n0inv;
         unsigned long long car = 0;
 
         for (unsigned j = 0; j < ms; ++j)
         {
-            car += (unsigned long long)m * mont_n[j] + val[i + j];
-            val[i + j] = (unsigned)car;
+            car += (unsigned long long)m * mont_n[j] + v[j];
+            v[j] = (unsigned)car;
             car >>= ITEM_SIZE;
         }
 

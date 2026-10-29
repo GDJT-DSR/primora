@@ -89,7 +89,8 @@ end_no:
 unsigned *gen(unsigned digs)
 {
     bi_size size = (bi_size){.limb = digs / 8, .bits = 4 * (digs % 8)};
-    unsigned *result = bi_create(size.limb + 1);
+    unsigned limbs = size.limb + !(size.bits);
+    unsigned *result = bi_create(limbs);
     for (;;)
     {
         do
@@ -98,7 +99,7 @@ unsigned *gen(unsigned digs)
         printf("try: ");
         bi_print_hex(result, size);
         printf("\n");
-        if (test(result, size.limb + 1))
+        if (test(result, limbs))
             return result;
 
         printf("failed.\n\n");
