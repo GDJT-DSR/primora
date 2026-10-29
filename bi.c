@@ -114,17 +114,17 @@ int bi_add(unsigned *l, const unsigned *r, unsigned s)
     }
     return (int)car;
 }
-int bi_add_small(unsigned *l, unsigned r, unsigned s)
-{
-    unsigned long long car = r;
-    for (unsigned i = 0; i < s && car; ++i)
-    {
-        car += l[i];
-        l[i] = (unsigned)car;
-        car >>= ITEM_SIZE;
-    }
-    return (int)car;
-}
+// int bi_add_small(unsigned *l, unsigned r, unsigned s)
+// {
+//     unsigned long long car = r;
+//     for (unsigned i = 0; i < s && car; ++i)
+//     {
+//         car += l[i];
+//         l[i] = (unsigned)car;
+//         car >>= ITEM_SIZE;
+//     }
+//     return (int)car;
+// }
 
 void bi_mul(const unsigned *l, unsigned ls, const unsigned *r, unsigned rs, unsigned *t, unsigned os)
 {
@@ -243,22 +243,6 @@ void bi_rshift(unsigned *val, unsigned shift, unsigned size)
     // }
 }
 
-unsigned bi_div(unsigned *val, unsigned target, unsigned size)
-{
-    typedef unsigned long long ulg;
-    unsigned long long cur = 0;
-
-    while (size > 0)
-    {
-        --size;
-        cur += val[size];
-        ulg k = cur / target;
-        ulg r = cur - target * k;
-        val[size] = (unsigned)k;
-        cur = r << ITEM_SIZE;
-    }
-    return (unsigned)cur;
-}
 unsigned bi_remainder(unsigned *val, unsigned target, unsigned size)
 {
     if (target == 0)
@@ -274,13 +258,6 @@ unsigned bi_remainder(unsigned *val, unsigned target, unsigned size)
     // printf("%d, %llx\n", target, rem);
 
     return (unsigned)rem;
-}
-unsigned bi_bit(const unsigned *v, unsigned b)
-{
-    unsigned u = b / ITEM_SIZE;
-    unsigned r = b - u * ITEM_SIZE;
-
-    return !!(v[u] & (1u << r));
 }
 // 末尾0的个数
 bi_size bi_end0(const unsigned *val, unsigned size)

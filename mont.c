@@ -149,6 +149,39 @@ void mont_square(unsigned *a)
         a[i] = tmp[i];
     }
 }
+
+// 单个limb的滑动窗口
+inline static void mont_single(unsigned *restrict a, unsigned *restrict b, unsigned *restrict res,
+                               unsigned *restrict table, unsigned l, unsigned ms, int end)
+{
+    unsigned current = b[l];
+    for (int high = 31; high >= end;)
+    {
+        if ((current & (1u << high)) == 0)
+        {
+            mont_square(a);
+            --high;
+            continue;
+        }
+        int low = high - WINDOW_SIZE + 1;
+        if (low < 0)
+            low = 0;
+        while ((current & (1u << low)) == 0)
+            ++low;
+        mont_square(a);
+        unsigned val = 1;
+        for (int k = high - 1; k >= low; --k)
+        {
+            val <<= 1;
+            val |= (current >> k) & 1;
+            mont_square(a);
+        }
+        bi_zero(res, ms + 2);
+        mont_mul(a, table + (val >> 1) * ms, res);
+        bi_copy(a, res, ms);
+        high = low - 1;
+    }
+}
 void mont_pow(unsigned *a, unsigned *b, unsigned size, unsigned shift)
 {
     unsigned ms = mont_size;
@@ -158,7 +191,7 @@ void mont_pow(unsigned *a, unsigned *b, unsigned size, unsigned shift)
         bi_copy(a, mont_one, ms);
         return;
     }
-    unsigned nbits = bs.limb * ITEM_SIZE + bs.bits - shift;
+    // unsigned nbits = bs.limb * ITEM_SIZE + bs.bits - shift;
     const unsigned table_count = 1u << (WINDOW_SIZE - 1);
     unsigned *table = bi_create(table_count * ms);
     // size = bi_get_size(b, size).limb + 1;
@@ -187,43 +220,50 @@ void mont_pow(unsigned *a, unsigned *b, unsigned size, unsigned shift)
         bi_copy(dst, res, ms);
     }
 
+    unsigned limb = shift / ITEM_SIZE;
+    unsigned rem = shift - ITEM_SIZE * limb;
     bi_copy(a, mont_one, ms);
-    for (int high = (int)nbits - 1; high >= 0;)
+    for (unsigned l = ms - 1; l > limb; l--)
     {
-        unsigned pos = (unsigned)high + shift;
-        if (!bi_bit(b, pos))
-        {
-            mont_square(a);
-            --high;
-            continue;
-        }
-
-        int low = high - WINDOW_SIZE + 1;
-        if (low < 0)
-            low = 0;
-
-        // 缩短窗口使得最后一位是1
-        while (!bi_bit(b, (unsigned)low + shift))
-            ++low;
-
-        int len = high - low + 1;
-        unsigned val = 1;
-        for (int k = high - 1; k >= low; --k)
-        {
-            val <<= 1;
-            val |= bi_bit(b, (unsigned)k + shift);
-        }
-        for (int k = 0; k < len; ++k)
-        {
-            mont_square(a);
-        }
-        bi_zero(res, ms + 2);
-        mont_mul(a, table + (val >> 1) * ms, res);
-        bi_copy(a, res, ms);
-
-        high = low - 1;
+        mont_single(a, b, res, table, l, ms, 0);
     }
-
+    mont_single(a, b, res, table, limb, ms, (int)rem);
+    // for (int high = (int)nbits - 1; high >= 0;)
+    // {
+    //     unsigned pos = (unsigned)high + shift;
+    //     if (!bi_bit(b, pos))
+    //     {
+    //         mont_square(a);
+    //         --high;
+    //         continue;
+    //     }
+    //
+    //     int low = high - WINDOW_SIZE + 1;
+    //     if (low < 0)
+    //         low = 0;
+    //
+    //     // 缩短窗口使得最后一位是1
+    //     while (!bi_bit(b, (unsigned)low + shift))
+    //         ++low;
+    //
+    //     int len = high - low + 1;
+    //     unsigned val = 1;
+    //     for (int k = high - 1; k >= low; --k)
+    //     {
+    //         val <<= 1;
+    //         val |= bi_bit(b, (unsigned)k + shift);
+    //     }
+    //     for (int k = 0; k < len; ++k)
+    //     {
+    //         mont_square(a);
+    //     }
+    //     bi_zero(res, ms + 2);
+    //     mont_mul(a, table + (val >> 1) * ms, res);
+    //     bi_copy(a, res, ms);
+    //
+    //     high = low - 1;
+    // }
+    //
     // for (unsigned i = 0; i < nbits; ++i, mont_square(tmp))
     // {
     //     if (!bi_bit(b, i + shift))

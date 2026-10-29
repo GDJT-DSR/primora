@@ -23,8 +23,6 @@ void bi_random(unsigned *val, bi_size size);
 // 得到大整数在二进制下的实际大小
 bi_size bi_get_size(const unsigned *val, unsigned size);
 
-// 得到某一位
-unsigned bi_bit(const unsigned *val, unsigned bit);
 
 // 得到数的补码
 void bi_comp(unsigned *, unsigned);
@@ -38,7 +36,7 @@ int bi_add(unsigned *restrict l, const unsigned *restrict r, unsigned size);
 // l -= r，返回最高位是否借位
 int bi_sub(unsigned *restrict l, const unsigned *restrict r, unsigned size);
 // 加一个低精度数，返回溢出
-int bi_add_small(unsigned *restrict l, unsigned r, unsigned size);
+// int bi_add_small(unsigned *restrict l, unsigned r, unsigned size);
 
 void bi_mul(const unsigned *restrict, unsigned, const unsigned *restrict, unsigned, unsigned *restrict, unsigned);
 void bi_square(const unsigned *restrict, unsigned, unsigned *restrict, unsigned);
