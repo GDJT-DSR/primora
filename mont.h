@@ -14,14 +14,14 @@ void mont_init(unsigned *, unsigned);
 
 // 蒙哥马利约简, 长度为2 * mont_size + 1
 void mont_redc(unsigned *);
-// 蒙哥马利模乘, res 长为2 * mont_size + 1
-void mont_mul(unsigned *l, unsigned *r, unsigned *res);
+// 蒙哥马利模乘, res 长为 mont_size + 2
+void mont_mul(unsigned *restrict l, unsigned *restrict r, unsigned *restrict res);
 
 // len(a) = mont_n_size
 void mont_square(unsigned *a);
 
 // len(a) = mont_n_size, 传入len(b)
-void mont_pow(unsigned *a, unsigned *b, unsigned size, unsigned shift);
+void mont_pow(unsigned *restrict a, unsigned *restrict b, unsigned size, unsigned shift);
 
 void mont_clean(void);
 

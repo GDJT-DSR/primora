@@ -212,42 +212,35 @@ int bi_cmp(const unsigned *l, const unsigned *r, unsigned s)
     }
     return 0;
 }
-void bi_rshift(unsigned *val, bi_size shift, unsigned size)
+void bi_rshift(unsigned *val, unsigned shift, unsigned size)
 {
-    if (shift.limb == 0 && shift.bits == 0)
-        return;
     // a[i] = a[i + l] >> b | a[i + l + 1] << (32-b);
-    if (shift.bits == 32)
-    {
-        shift.bits = 0;
-        ++shift.limb;
-    }
-    if (shift.limb >= size)
+    if (shift >= size)
     {
         bi_zero(val, size);
         return;
     }
-    unsigned n = size - shift.limb;
-    if (shift.bits == 0)
-    {
-        for (unsigned i = 0; i < n; ++i)
-            val[i] = val[i + shift.limb];
-        for (unsigned i = size - shift.limb; i < size; ++i)
-            val[i] = 0;
-    }
-    else
-    {
-        for (unsigned i = 0; i < (n - 1); ++i)
-        {
-            val[i] = (val[i + shift.limb] >> shift.bits) | (val[i + shift.limb + 1] << (32 - shift.bits));
-        }
-        // 单独处理i+l-1
-        val[n - 1] = val[size - 1] >> shift.bits;
-        for (unsigned i = n; i < size; ++i)
-        {
-            val[i] = 0;
-        }
-    }
+    unsigned n = size - shift;
+    // if (shift.bits == 0)
+    // {
+    for (unsigned i = 0; i < n; ++i)
+        val[i] = val[i + shift];
+    for (unsigned i = size - shift; i < size; ++i)
+        val[i] = 0;
+    // }
+    // else
+    // {
+    //     for (unsigned i = 0; i < (n - 1); ++i)
+    //     {
+    //         val[i] = (val[i + shift.limb] >> shift.bits) | (val[i + shift.limb + 1] << (32 - shift.bits));
+    //     }
+    //     // 单独处理i+l-1
+    //     val[n - 1] = val[size - 1] >> shift.bits;
+    //     for (unsigned i = n; i < size; ++i)
+    //     {
+    //         val[i] = 0;
+    //     }
+    // }
 }
 
 unsigned bi_div(unsigned *val, unsigned target, unsigned size)

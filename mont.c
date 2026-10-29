@@ -12,6 +12,7 @@ unsigned mont_size;  // R = 2^(32*mont_size)
 bi_size mont_detail;
 unsigned *mont_square_tmp;
 #define WINDOW_SIZE 5
+typedef unsigned long long uli;
 
 void mont_init(unsigned *n, unsigned size)
 {
@@ -65,11 +66,11 @@ void mont_redc(unsigned *val)
         unsigned *v = val + i;
         // m = T[i] * (-n^{-1}) mod 2^32
         unsigned m = val[i] * mont_n0inv;
-        unsigned long long car = 0;
+        uli car = 0;
 
         for (unsigned j = 0; j < ms; ++j)
         {
-            car += (unsigned long long)m * mont_n[j] + v[j];
+            car += (uli)m * mont_n[j] + v[j];
             v[j] = (unsigned)car;
             car >>= ITEM_SIZE;
         }
@@ -77,12 +78,12 @@ void mont_redc(unsigned *val)
         unsigned k = i + ms;
         for (; car && k < ms * 2 + 1; ++k)
         {
-            unsigned long long cur = (unsigned long long)val[k] + car;
+            uli cur = (uli)val[k] + car;
             val[k] = (unsigned)cur;
             car = cur >> ITEM_SIZE;
         }
     }
-    bi_rshift(val, (bi_size){.limb = ms, .bits = 0}, 2 * ms + 1);
+    bi_rshift(val, ms, 2 * ms + 1);
     if (val[ms] || bi_cmp(val, mont_n, ms) >= 0)
     {
         // val[ms] = !bi_sub(val, mont_n, ms);
@@ -93,8 +94,48 @@ void mont_redc(unsigned *val)
 
 void mont_mul(unsigned *l, unsigned *r, unsigned *res)
 {
-    bi_mul(l, mont_size, r, mont_size, res, 2 * mont_size + 1);
-    mont_redc(res);
+    const unsigned inv = mont_n0inv;
+    const unsigned ms = mont_size;
+    const unsigned *n = mont_n;
+    // bi_mul(l, mont_size, r, mont_size, res, 2 * mont_size + 1);
+    // mont_redc(res);
+    uli car = 0;
+
+    for (unsigned i = 0; i < ms; ++i)
+    {
+        // res += l * r[i];
+        car = 0;
+        for (unsigned j = 0; j < ms; ++j)
+        {
+            car += (uli)l[j] * r[i] + res[j];
+            res[j] = (unsigned)car;
+            car >>= 32;
+        }
+        car += res[ms];
+        res[ms] = (unsigned)car;
+        res[ms + 1] = (unsigned)(car >> 32);
+
+        // REDC
+        unsigned m = res[0] * inv;
+        car = (uli)m * n[0] + res[0];
+        car >>= 32;
+        for (unsigned j = 1; j < ms; ++j)
+        {
+            car += (uli)m * n[j] + res[j];
+            res[j - 1] = (unsigned)car; // rshift 1
+            car >>= 32;
+        }
+        car += res[ms];
+        res[ms - 1] = (unsigned)car;
+        res[ms] = res[ms + 1] + (unsigned)(car >> 32);
+
+        if (res[ms] || bi_cmp(res, n, ms) >= 0)
+        {
+            bi_add(res, mont_n_comp, ms);
+            res[ms] = 0;
+        }
+        res[ms + 1] = 0;
+    }
 }
 
 void mont_square(unsigned *a)
@@ -122,7 +163,7 @@ void mont_pow(unsigned *a, unsigned *b, unsigned size, unsigned shift)
     unsigned *table = bi_create(table_count * ms);
     // size = bi_get_size(b, size).limb + 1;
     // size *= ITEM_SIZE;
-    unsigned *res = bi_create(2 * ms + 1);
+    unsigned *res = bi_create(ms + 2);
     unsigned *a2 = bi_create(2 * ms + 1);
     // 处理a > n的情况
     if (bi_cmp(a, mont_n, ms) >= 0)
@@ -141,7 +182,7 @@ void mont_pow(unsigned *a, unsigned *b, unsigned size, unsigned shift)
     for (unsigned i = 1; i < table_count; ++i)
     {
         unsigned *dst = table + i * ms;
-        bi_zero(res, 2 * ms + 1);
+        bi_zero(res, ms + 2);
         mont_mul(dst - ms, a2, res);
         bi_copy(dst, res, ms);
     }
@@ -176,7 +217,7 @@ void mont_pow(unsigned *a, unsigned *b, unsigned size, unsigned shift)
         {
             mont_square(a);
         }
-        bi_zero(res, 2 * ms + 1);
+        bi_zero(res, ms + 2);
         mont_mul(a, table + (val >> 1) * ms, res);
         bi_copy(a, res, ms);
 

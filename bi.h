@@ -15,7 +15,7 @@ unsigned *bi_create(unsigned size);
 unsigned *bi_clone(const unsigned *origin, unsigned size);
 unsigned *bi_from_string(const char *s, unsigned *size);
 
-void bi_copy(unsigned *dest, const unsigned *src, unsigned size);
+void bi_copy(unsigned *restrict dest, const unsigned *restrict src, unsigned size);
 void bi_zero(unsigned *dest, unsigned size);
 
 void bi_random(unsigned *val, bi_size size);
@@ -30,30 +30,30 @@ unsigned bi_bit(const unsigned *val, unsigned bit);
 void bi_comp(unsigned *, unsigned);
 
 // 比较大小
-int bi_cmp(const unsigned *l, const unsigned *r, unsigned size);
+int bi_cmp(const unsigned *restrict l, const unsigned *restrict r, unsigned size);
 
 // 加在一起，返回溢出 l += r
-int bi_add(unsigned *l, const unsigned *r, unsigned size);
+int bi_add(unsigned *restrict l, const unsigned *restrict r, unsigned size);
 
 // l -= r，返回最高位是否借位
-int bi_sub(unsigned *l, const unsigned *r, unsigned size);
+int bi_sub(unsigned *restrict l, const unsigned *restrict r, unsigned size);
 // 加一个低精度数，返回溢出
-int bi_add_small(unsigned *l, unsigned r, unsigned size);
+int bi_add_small(unsigned *restrict l, unsigned r, unsigned size);
 
-void bi_mul(const unsigned *, unsigned, const unsigned *, unsigned, unsigned *, unsigned);
-void bi_square(const unsigned *, unsigned, unsigned *, unsigned);
+void bi_mul(const unsigned *restrict, unsigned, const unsigned *restrict, unsigned, unsigned *restrict, unsigned);
+void bi_square(const unsigned *restrict, unsigned, unsigned *restrict, unsigned);
 
 // 求余数 l r l_size
 unsigned bi_remainder(unsigned *, unsigned, unsigned);
 
 // val size size
-void bi_rshift(unsigned *, bi_size, unsigned);
+void bi_rshift(unsigned *, unsigned, unsigned);
 
 void bi_print_hex(const unsigned *val, bi_size size);
 
 // 末尾0的个数，返回bit
 bi_size bi_end0(const unsigned *val, unsigned size);
 
-void bi_double_mod(unsigned *val, const unsigned *mod, const unsigned *nmod, unsigned size);
+void bi_double_mod(unsigned *restrict val, const unsigned *restrict mod, const unsigned *restrict nmod, unsigned size);
 
 #endif

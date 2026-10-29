@@ -104,5 +104,4 @@ unsigned *gen(unsigned digs)
 
         printf("failed.\n\n");
     }
-    return result;
 }
