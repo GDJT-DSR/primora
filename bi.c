@@ -77,7 +77,11 @@ void bi_print_hex(const unsigned *val, bi_size size)
     static char bitset[] = "0123456789abcdef";
     printf("0x");
     unsigned time = (size.bits + 3) / 4;
+#ifdef _MSC_VER
+    char *buf = malloc(8 * size.limb + 9);
+#else
     char buf[8 * size.limb + 9];
+#endif
     unsigned i = 0;
     do
     {
@@ -90,6 +94,9 @@ void bi_print_hex(const unsigned *val, bi_size size)
     } while (size.limb-- > 0);
     buf[i] = '\0';
     puts(buf);
+#ifdef _MSC_VER
+    free(buf);
+#endif
 }
 void bi_comp(unsigned *val, unsigned size)
 {
