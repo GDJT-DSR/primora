@@ -117,7 +117,7 @@ void mont_pow(unsigned *a, unsigned *b, unsigned size, unsigned shift)
         return;
     }
     unsigned nbits = bs.limb * ITEM_SIZE + bs.bits - shift;
-    static unsigned table_count = 1 << (WINDOW_SIZE - 1);
+    const unsigned table_count = 1u << (WINDOW_SIZE - 1);
     unsigned *table = bi_create(table_count * ms);
     // size = bi_get_size(b, size).limb + 1;
     // size *= ITEM_SIZE;
