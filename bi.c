@@ -140,29 +140,6 @@ int bi_add_small(item_t *l, item_t r, unsigned s)
     return (int)car;
 }
 
-// void bi_mul(const item_t *l, unsigned ls, const item_t *r, unsigned rs, item_t *t, unsigned os)
-// {
-//     for (unsigned i = 0; i < ls; ++i)
-//     {
-//         // 进位
-//         item_t car = 0;
-//         for (unsigned j = 0; j < rs; ++j)
-//         {
-//             // u128 acc = u128_mul(l[i], r[j]);
-//             // u128_self_add(acc, t[i + j]);
-//             // u128_self_add(acc, car);
-//             //
-//             // t[i + j] = u128_low(acc);
-//             // car = u128_high(acc);
-//         }
-//         unsigned k = i + rs;
-//         for (; car && k < os; ++k)
-//         {
-//             t[k] += car;
-//             car = t[k] < car;
-//         }
-//     }
-// }
 void bi_square(const item_t *a, unsigned sa, item_t *r, unsigned sr)
 {
     item_t car = 0;
@@ -350,38 +327,11 @@ item_t *bi_from_string(const char *s, unsigned *size)
             return NULL;
         }
 
-        unsigned index = i / 16;       // limb
-        unsigned shift = (i % 16) * 4; // bit
+        unsigned index = i / (ITEM_SIZE / 4);       // limb
+        unsigned shift = (i % (ITEM_SIZE / 4)) * 4; // bit
 
         res[index] |= (val << shift);
     }
 
     return res;
 }
-// item_t*bi_from_string(const char *s, item_t*size)
-// {
-//     unsigned len = str_len(s);
-//     if (s[0] == '0' && s[1] == 'x')
-//     {
-//         *size = (len - 2) / 8 + 1;
-//         item_t*res = bi_create(*size);
-//         for (unsigned i = 0; i < *size; ++i)
-//         {
-//             for (unsigned j = 0; j < 8; ++j)
-//             {
-//                 if (8 * i + j + 2 >= len)
-//                     return res;
-//                 unsigned val = parse_single(s[8 * i + 2 + j]);
-//                 if (val == 17)
-//                 {
-//                     free(res);
-//                     return NULL;
-//                 }
-//
-//                 res[i] |= val << (j * 8);
-//             }
-//         }
-//         return res;
-//     }
-//     return NULL;
-// }
