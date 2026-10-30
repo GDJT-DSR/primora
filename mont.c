@@ -1,20 +1,21 @@
 #include "mont.h"
 #include "bi.h"
+#include "uints.h"
 #include "utils.h"
 #include <stdlib.h>
 
-unsigned *mont_n;
-unsigned *mont_n_comp; // 2^s - n
-unsigned *mont_one;
-unsigned *mont_ione;
-unsigned mont_n0inv; // -N^{-1} mod 2^32
-unsigned mont_size;  // R = 2^(32*mont_size)
+u64 *mont_n;
+u64 *mont_n_comp; // 2^s - n
+u64 *mont_one;
+u64 *mont_ione;
+u64 mont_n0inv;     // -N^{-1} mod 2^64
+unsigned mont_size; // R = 2^(64*mont_size)
 bi_size mont_detail;
-unsigned *mont_square_tmp;
-#define WINDOW_SIZE 5
+u64 *mont_square_tmp;
+#define WINDOW_SIZE 8
 typedef unsigned long long uli;
 
-void mont_init(unsigned *n, unsigned size)
+void mont_init(u64 *restrict n, unsigned size)
 {
     if (!size)
         return;
@@ -30,24 +31,25 @@ void mont_init(unsigned *n, unsigned size)
     bi_comp(mont_n_comp, ms);
 
     mont_n0inv = 1;
-    mont_n0inv *= 2u + n[0] * mont_n0inv;
-    mont_n0inv *= 2u + n[0] * mont_n0inv;
-    mont_n0inv *= 2u + n[0] * mont_n0inv;
-    mont_n0inv *= 2u + n[0] * mont_n0inv;
-    mont_n0inv *= 2u + n[0] * mont_n0inv;
+    mont_n0inv *= (u64)2 + n[0] * mont_n0inv;
+    mont_n0inv *= (u64)2 + n[0] * mont_n0inv;
+    mont_n0inv *= (u64)2 + n[0] * mont_n0inv;
+    mont_n0inv *= (u64)2 + n[0] * mont_n0inv;
+    mont_n0inv *= (u64)2 + n[0] * mont_n0inv;
+    mont_n0inv *= (u64)2 + n[0] * mont_n0inv;
 
     // 计算mont_one, mont_ione
     /*
     mont_detail = {l,b}
-    2^{32l+b} mod N = 2^{32l+b} - N
-    32-b次double_mod
+    2^{64l+b} mod N = 2^{64l+b} - N
+    64-b次double_mod
     */
 
     mont_one = bi_clone(mont_n_comp, ms);
     if (mont_detail.bits != 0)
     {
-        mont_one[mont_detail.limb] &= (1u << mont_detail.bits) - 1;
-        for (unsigned j = 0; j < 32 - mont_detail.bits; ++j)
+        mont_one[mont_detail.limb] &= ((u64)1 << mont_detail.bits) - 1;
+        for (unsigned j = 0; j < ITEM_SIZE - mont_detail.bits; ++j)
         {
             bi_double_mod(mont_one, mont_n, mont_n_comp, ms);
         }
@@ -58,29 +60,31 @@ void mont_init(unsigned *n, unsigned size)
     mont_square_tmp = bi_create(2 * ms + 1);
 }
 
-void mont_redc(unsigned *val)
+void mont_redc(u64 *restrict val)
 {
+    const u64 *restrict n = mont_n;
     unsigned ms = mont_size;
     for (unsigned i = 0; i < ms; ++i)
     {
-        unsigned *v = val + i;
-        // m = T[i] * (-n^{-1}) mod 2^32
-        unsigned m = val[i] * mont_n0inv;
+        u64 *v = val + i;
+        // m = T[i] * (-n^{-1}) mod 2^64
+        u64 m = val[i] * mont_n0inv;
         uli car = 0;
 
         for (unsigned j = 0; j < ms; ++j)
         {
-            car += (uli)m * mont_n[j] + v[j];
-            v[j] = (unsigned)car;
-            car >>= ITEM_SIZE;
+            u128 acc = u128_mul(m, n[j]);
+            u128_self_add(acc, v[j]);
+            u128_self_add(acc, car);
+            v[j] = u128_low(acc);
+            car = u128_high(acc);
         }
 
         unsigned k = i + ms;
         for (; car && k < ms * 2 + 1; ++k)
         {
-            uli cur = (uli)val[k] + car;
-            val[k] = (unsigned)cur;
-            car = cur >> ITEM_SIZE;
+            val[k] += car;
+            car = val[k] < car;
         }
     }
     bi_rshift(val, ms, 2 * ms + 1);
@@ -92,11 +96,11 @@ void mont_redc(unsigned *val)
     }
 }
 
-void mont_mul(unsigned *l, unsigned *r, unsigned *res)
+void mont_mul(u64 *restrict l, u64 *restrict r, u64 *restrict res)
 {
-    const unsigned inv = mont_n0inv;
+    const u64 inv = mont_n0inv;
     const unsigned ms = mont_size;
-    const unsigned *n = mont_n;
+    const u64 *restrict n = mont_n;
     // bi_mul(l, mont_size, r, mont_size, res, 2 * mont_size + 1);
     // mont_redc(res);
     uli car = 0;
@@ -107,27 +111,30 @@ void mont_mul(unsigned *l, unsigned *r, unsigned *res)
         car = 0;
         for (unsigned j = 0; j < ms; ++j)
         {
-            car += (uli)l[j] * r[i] + res[j];
-            res[j] = (unsigned)car;
-            car >>= 32;
+            u128 acc = u128_mul(l[j], r[i]);
+            u128_self_add(acc, res[j]);
+            u128_self_add(acc, car);
+            res[j] = u128_low(acc);
+            car = u128_high(acc);
         }
-        car += res[ms];
-        res[ms] = (unsigned)car;
-        res[ms + 1] = (unsigned)(car >> 32);
+        res[ms] += car;
+        res[ms + 1] = res[ms] < car;
 
         // REDC
-        unsigned m = res[0] * inv;
-        car = (uli)m * n[0] + res[0];
-        car >>= 32;
+        u64 m = res[0] * inv;
+        u128 acc = u128_mul(m, n[0]);
+        u128_self_add(acc, res[0]);
+        car = u128_high(acc);
         for (unsigned j = 1; j < ms; ++j)
         {
-            car += (uli)m * n[j] + res[j];
-            res[j - 1] = (unsigned)car; // rshift 1
-            car >>= 32;
+            u128 acc = u128_mul(m, n[j]);
+            u128_self_add(acc, res[j]);
+            u128_self_add(acc, car);
+            res[j - 1] = u128_low(acc);
+            car = u128_high(acc);
         }
-        car += res[ms];
-        res[ms - 1] = (unsigned)car;
-        res[ms] = res[ms + 1] + (unsigned)(car >> 32);
+        res[ms - 1] = car + res[ms];
+        res[ms] = res[ms + 1] + (res[ms - 1] < car);
 
         if (res[ms] || bi_cmp(res, n, ms) >= 0)
         {
@@ -138,9 +145,9 @@ void mont_mul(unsigned *l, unsigned *r, unsigned *res)
     }
 }
 
-void mont_square(unsigned *a)
+void mont_square(u64 *restrict a)
 {
-    unsigned *tmp = mont_square_tmp;
+    u64 *restrict tmp = mont_square_tmp;
     bi_zero(tmp, 2 * mont_size + 1);
     bi_square(a, mont_size, tmp, 2 * mont_size + 1);
     mont_redc(tmp);
@@ -151,13 +158,13 @@ void mont_square(unsigned *a)
 }
 
 // 单个limb的滑动窗口
-inline static void mont_single(unsigned *restrict a, unsigned *restrict b, unsigned *restrict res,
-                               unsigned *restrict table, unsigned l, unsigned ms, int end)
+inline static void mont_single(u64 *restrict a, u64 *restrict b, u64 *restrict res, u64 *restrict table, unsigned l,
+                               unsigned ms, int end)
 {
-    unsigned current = b[l];
-    for (int high = 31; high >= end;)
+    u64 current = b[l];
+    for (int high = ITEM_SIZE - 1; high >= end;)
     {
-        if ((current & (1u << high)) == 0)
+        if ((current & ((u64)1 << high)) == 0)
         {
             mont_square(a);
             --high;
@@ -166,7 +173,7 @@ inline static void mont_single(unsigned *restrict a, unsigned *restrict b, unsig
         int low = high - WINDOW_SIZE + 1;
         if (low < 0)
             low = 0;
-        while ((current & (1u << low)) == 0)
+        while ((current & ((u64)1 << low)) == 0)
             ++low;
         mont_square(a);
         unsigned val = 1;
@@ -182,7 +189,7 @@ inline static void mont_single(unsigned *restrict a, unsigned *restrict b, unsig
         high = low - 1;
     }
 }
-void mont_pow(unsigned *a, unsigned *b, unsigned size, unsigned shift)
+void mont_pow(u64 *a, u64 *b, unsigned size, unsigned shift)
 {
     unsigned ms = mont_size;
     bi_size bs = bi_get_size(b, size);
@@ -193,11 +200,11 @@ void mont_pow(unsigned *a, unsigned *b, unsigned size, unsigned shift)
     }
     // unsigned nbits = bs.limb * ITEM_SIZE + bs.bits - shift;
     const unsigned table_count = 1u << (WINDOW_SIZE - 1);
-    unsigned *table = bi_create(table_count * ms);
+    u64 *table = bi_create(table_count * ms);
     // size = bi_get_size(b, size).limb + 1;
     // size *= ITEM_SIZE;
-    unsigned *res = bi_create(ms + 2);
-    unsigned *a2 = bi_create(2 * ms + 1);
+    u64 *res = bi_create(ms + 2);
+    u64 *a2 = bi_create(2 * ms + 1);
     // 处理a > n的情况
     if (bi_cmp(a, mont_n, ms) >= 0)
     {
@@ -214,7 +221,7 @@ void mont_pow(unsigned *a, unsigned *b, unsigned size, unsigned shift)
     mont_square(a2);
     for (unsigned i = 1; i < table_count; ++i)
     {
-        unsigned *dst = table + i * ms;
+        u64 *dst = table + i * ms;
         bi_zero(res, ms + 2);
         mont_mul(dst - ms, a2, res);
         bi_copy(dst, res, ms);

@@ -33,9 +33,9 @@ int main(int argc, char *argv[])
             printf("seed参数错误\n");
         }
         mt19937_init(&bi_rand, seed);
-        unsigned *val = gen(digs);
+        u64 *val = gen(digs);
         printf("\n\nResult:\n");
-        bi_print_hex(val, (bi_size){.limb = digs / 8, .bits = 4 * (digs % 8)});
+        bi_print_hex(val, (bi_size){.limb = digs / 16, .bits = 4 * (digs % 16)});
         printf("\n");
         free(val);
         return 0;
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     if (str_eq(argv[1], "verify"))
     {
         mt19937_init(&bi_rand, (unsigned)time(NULL));
-        unsigned *val = NULL;
+        u64 *val = NULL;
         unsigned size = 0;
         if (argc >= 3)
             val = bi_from_string(argv[2], &size);

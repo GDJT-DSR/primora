@@ -1,7 +1,8 @@
 #ifndef BI_H_
 #define BI_H_
 #include "mt19937.h"
-#define ITEM_SIZE 32
+#include "uints.h"
+#define ITEM_SIZE 64
 
 typedef struct bi_size
 {
@@ -11,47 +12,46 @@ typedef struct bi_size
 
 extern mt19937_t bi_rand;
 
-unsigned *bi_create(unsigned size);
-unsigned *bi_clone(const unsigned *origin, unsigned size);
-unsigned *bi_from_string(const char *s, unsigned *size);
+u64 *bi_create(unsigned size);
+u64 *bi_clone(const u64 *origin, unsigned size);
+u64 *bi_from_string(const char *s, unsigned *size);
 
-void bi_copy(unsigned *restrict dest, const unsigned *restrict src, unsigned size);
-void bi_zero(unsigned *dest, unsigned size);
+void bi_copy(u64 *restrict dest, const u64 *restrict src, unsigned size);
+void bi_zero(u64 *dest, unsigned size);
 
-void bi_random(unsigned *val, bi_size size);
+void bi_random(u64 *val, bi_size size);
 
 // 得到大整数在二进制下的实际大小
-bi_size bi_get_size(const unsigned *val, unsigned size);
-
+bi_size bi_get_size(const u64 *val, unsigned size);
 
 // 得到数的补码
-void bi_comp(unsigned *, unsigned);
+void bi_comp(u64 *, unsigned);
 
 // 比较大小
-int bi_cmp(const unsigned *restrict l, const unsigned *restrict r, unsigned size);
+int bi_cmp(const u64 *restrict l, const u64 *restrict r, unsigned size);
 
 // 加在一起，返回溢出 l += r
-int bi_add(unsigned *restrict l, const unsigned *restrict r, unsigned size);
+int bi_add(u64 *restrict l, const u64 *restrict r, unsigned size);
 
 // l -= r，返回最高位是否借位
-int bi_sub(unsigned *restrict l, const unsigned *restrict r, unsigned size);
+int bi_sub(u64 *restrict l, const u64 *restrict r, unsigned size);
 // 加一个低精度数，返回溢出
-// int bi_add_small(unsigned *restrict l, unsigned r, unsigned size);
+int bi_add_small(u64 *restrict l, u64 r, unsigned size);
 
-void bi_mul(const unsigned *restrict, unsigned, const unsigned *restrict, unsigned, unsigned *restrict, unsigned);
-void bi_square(const unsigned *restrict, unsigned, unsigned *restrict, unsigned);
+void bi_mul(const u64 *restrict, unsigned, const u64 *restrict, unsigned, u64 *restrict, unsigned);
+void bi_square(const u64 *restrict, unsigned, u64 *restrict, unsigned);
 
 // 求余数 l r l_size
-unsigned bi_remainder(unsigned *, unsigned, unsigned);
+unsigned bi_remainder(u64 *, unsigned, unsigned);
 
 // val size size
-void bi_rshift(unsigned *, unsigned, unsigned);
+void bi_rshift(u64 *, unsigned, unsigned);
 
-void bi_print_hex(const unsigned *val, bi_size size);
+void bi_print_hex(const u64 *val, bi_size size);
 
 // 末尾0的个数，返回bit
-bi_size bi_end0(const unsigned *val, unsigned size);
+bi_size bi_end0(const u64 *val, unsigned size);
 
-void bi_double_mod(unsigned *restrict val, const unsigned *restrict mod, const unsigned *restrict nmod, unsigned size);
+void bi_double_mod(u64 *restrict val, const u64 *restrict mod, const u64 *restrict nmod, unsigned size);
 
 #endif
