@@ -7,7 +7,7 @@
 
 unsigned test_time = 10;
 
-int test(u64 *val, unsigned size)
+int test(item_t *val, unsigned size)
 {
     bi_size size_detail = bi_get_size(val, size);
     if (size_detail.limb == 0)
@@ -34,15 +34,15 @@ int test(u64 *val, unsigned size)
             return 0;
 
     mont_init(val, size);
-    u64 *tmp = bi_clone(val, size);
+    item_t *tmp = bi_clone(val, size);
 
     tmp[0] ^= 1u;
     bi_size end0_size = bi_end0(tmp, size);
     unsigned count = end0_size.bits + end0_size.limb * ITEM_SIZE;
     // bi_rshift(tmp, end0_size, size);
 
-    u64 *ar = bi_create(2 * mont_size + 1);
-    u64 *a = bi_create(2 * mont_size + 1);
+    item_t *ar = bi_create(2 * mont_size + 1);
+    item_t *a = bi_create(2 * mont_size + 1);
     for (unsigned t = 0; t < test_time; ++t)
     {
         do
@@ -86,16 +86,16 @@ end_no:
     return 0;
 }
 
-u64 *gen(unsigned digs)
+item_t *gen(unsigned digs)
 {
-    bi_size size = (bi_size){.limb = digs / 16, .bits = 4 * (digs % 16)};
+    bi_size size = (bi_size){.limb = digs / (ITEM_SIZE / 4), .bits = 4 * (digs % (ITEM_SIZE / 4))};
     unsigned limbs = size.limb + 1;
-    u64 *result = bi_create(limbs);
+    item_t *result = bi_create(limbs);
     for (;;)
     {
         do
             bi_random(result, size);
-        while (!((result[size.limb - (size.bits == 0)] >> (size.bits ? size.bits - 4 : 60)) & 0xf));
+        while (!((result[size.limb - (size.bits == 0)] >> (size.bits ? size.bits - 4 : ITEM_SIZE - 4)) & 0xf));
         printf("try: ");
         bi_print_hex(result, size);
         printf("\n");

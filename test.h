@@ -1,9 +1,9 @@
 #ifndef TEST_H_
 #define TEST_H_
-#include "uints.h"
+#include "bi.h"
 
-int test(u64 *val, unsigned size);
-u64 *gen(unsigned digs);
+int test(item_t *val, unsigned size);
+item_t *gen(unsigned digs);
 
 extern unsigned test_time;
 
