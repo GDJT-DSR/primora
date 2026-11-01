@@ -128,13 +128,12 @@ void mont_mul(item_t *restrict l, item_t *restrict r, item_t *restrict res)
         }
         res[ms - 1] = car + res[ms];
         res[ms] = res[ms + 1] + (res[ms - 1] < car);
-
-        if (res[ms] || bi_cmp(res, n, ms) >= 0)
-        {
-            bi_add(res, mont_n_comp, ms);
-            res[ms] = 0;
-        }
         res[ms + 1] = 0;
+    }
+    if (res[ms] || bi_cmp(res, n, ms) >= 0)
+    {
+        bi_add(res, mont_n_comp, ms);
+        res[ms] = 0;
     }
 }
 
