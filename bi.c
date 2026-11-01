@@ -1,11 +1,9 @@
 #include "bi.h"
-#include "mt19937.h"
+#include "rand.h"
 #include "utils.h"
 #include <limits.h>
-#include <stdio.h>
 #include <stdlib.h>
 
-mt19937_t bi_rand;
 item_t *bi_clone(const item_t *origin, unsigned size)
 {
     item_t *tmp = malloc(sizeof(item_t) * size);
@@ -31,23 +29,16 @@ void bi_copy(item_t *dest, const item_t *src, unsigned s)
 }
 void bi_random(item_t *val, bi_size size)
 {
-    static mt19937_t *m = &bi_rand;
     for (unsigned i = 0; i < size.limb; ++i)
     {
         // val[i] =
         // (unsigned)((rand() & 0xff) | ((rand() & 0xff) << 8) | ((rand() & 0xff) << 16) | ((rand() & 0xff) << 24));
-        val[i] = mt19937_gen(m);
-#if ITEM_SIZE == 64
-        val[i] |= (item_t)mt19937_gen(m) << 32;
-#endif
+        val[i] = (item_t)romu_gen();
     }
     if (size.bits)
     {
         // val[size.limb] = mt19937_gen(m) & ((1u << size.bits) - 1);
-        val[size.limb] = mt19937_gen(m);
-#if ITEM_SIZE == 64
-        val[size.limb] |= (item_t)mt19937_gen(m) << 32;
-#endif
+        val[size.limb] = (item_t)romu_gen();
         val[size.limb] &= ((item_t)1 << size.bits) - 1;
     }
     else
@@ -87,13 +78,14 @@ void bi_zero(item_t *v, unsigned s)
         v[i] = 0;
     }
 }
-void bi_print_hex(const item_t *val, bi_size size)
+char *bi_to_hex(const item_t *val, bi_size size)
 {
     static char bitset[] = "0123456789abcdef";
-    printf("0x");
     unsigned time = (size.bits + 3) / 4;
-    char *buf = malloc(size.limb * (ITEM_SIZE / 4) + time + 1);
-    unsigned i = 0;
+    char *buf = malloc(size.limb * (ITEM_SIZE / 4) + time + 3);
+    buf[0] = '0';
+    buf[1] = 'x';
+    unsigned i = 2;
     do
     {
         while (time-- > 0)
@@ -104,8 +96,7 @@ void bi_print_hex(const item_t *val, bi_size size)
         time = (ITEM_SIZE / 4);
     } while (size.limb-- > 0);
     buf[i] = '\0';
-    puts(buf);
-    free(buf);
+    return buf;
 }
 void bi_comp(item_t *val, unsigned size)
 {

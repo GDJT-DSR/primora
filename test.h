@@ -3,7 +3,7 @@
 #include "bi.h"
 
 int test(item_t *val, unsigned size);
-item_t *gen(unsigned digs);
+char *gen(unsigned digs);
 
 extern unsigned test_time;
 

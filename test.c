@@ -52,7 +52,9 @@ int test(item_t *val, unsigned size)
             mont_redc(a);
         } while (bi_cmp(a, tmp, mont_size) >= 0 || a[0] < 2);
         printf("test%u: a=", t);
-        bi_print_hex(a, (bi_size){.limb = mont_size, .bits = 0});
+        char *buf = bi_to_hex(a, (bi_size){.limb = mont_size, .bits = 0});
+        puts(buf);
+        free(buf);
         putchar('\n');
         mont_pow(ar, tmp, size, count);
         if (!bi_cmp(ar, mont_one, mont_size) || !bi_cmp(ar, mont_ione, mont_size))
@@ -86,7 +88,7 @@ end_no:
     return 0;
 }
 
-item_t *gen(unsigned digs)
+char *gen(unsigned digs)
 {
     bi_size size = (bi_size){.limb = digs / (ITEM_SIZE / 4), .bits = 4 * (digs % (ITEM_SIZE / 4))};
     unsigned limbs = size.limb + 1;
@@ -96,12 +98,13 @@ item_t *gen(unsigned digs)
         do
             bi_random(result, size);
         while (!((result[size.limb - (size.bits == 0)] >> (size.bits ? size.bits - 4 : ITEM_SIZE - 4)) & 0xf));
-        printf("try: ");
-        bi_print_hex(result, size);
-        printf("\n");
+        puts("try: ");
+        char *buf = bi_to_hex(result, size);
+        puts(buf);
         if (test(result, limbs))
-            return result;
+            return buf;
 
-        printf("failed.\n\n");
+        free(buf);
+        puts("failed.\n");
     }
 }

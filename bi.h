@@ -1,6 +1,5 @@
 #ifndef BI_H_
 #define BI_H_
-#include "mt19937.h"
 
 #if defined(__SIZEOF_INT128__) && !defined(NO_U128)
 typedef unsigned long long item_t;
@@ -20,8 +19,6 @@ typedef struct bi_size
     unsigned limb; // 全部有效的limb数
     unsigned bits; // 部分有效的字节数，in [0,31]
 } bi_size;
-
-extern mt19937_t bi_rand;
 
 item_t *bi_create(unsigned size);
 item_t *bi_clone(const item_t *origin, unsigned size);
@@ -57,7 +54,7 @@ unsigned bi_remainder(item_t *, unsigned, unsigned);
 // val size size
 void bi_rshift(item_t *, unsigned, unsigned);
 
-void bi_print_hex(const item_t *val, bi_size size);
+char *bi_to_hex(const item_t *val, bi_size size);
 
 // 末尾0的个数，返回bit
 bi_size bi_end0(const item_t *val, unsigned size);

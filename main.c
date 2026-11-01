@@ -1,4 +1,5 @@
 #include "bi.h"
+#include "rand.h"
 #include "test.h"
 #include "utils.h"
 #include <stdio.h>
@@ -27,22 +28,31 @@ int main(int argc, char *argv[])
             printf("不支持的长度: %u，需要2~4096", digs);
             return 2;
         }
-        unsigned seed = (unsigned)time(NULL);
-        if (argc >= 4 && sscanf(argv[3], "%u", &seed) != 1)
+        rand_t seed = (rand_t)time(NULL);
+        if (argc >= 4 && sscanf(argv[3], "%llu", &seed) != 1)
         {
             printf("seed参数错误\n");
         }
-        mt19937_init(&bi_rand, seed);
-        item_t *val = gen(digs);
-        printf("\n\nResult:\n");
-        bi_print_hex(val, (bi_size){.limb = digs / (ITEM_SIZE / 4), .bits = 4 * (digs % (ITEM_SIZE / 4))});
-        printf("\n");
+        romu_srand(seed);
+        char *val = gen(digs);
+        puts("\n\nResult:");
+        puts(val);
+        FILE *fp = fopen("primora_out.txt", "a");
+        if (!fp)
+        {
+            perror("fopen");
+            return 3;
+        }
+        fputs(val, fp);
+        fputc('\n', fp);
+
+        fclose(fp);
         free(val);
         return 0;
     }
     if (str_eq(argv[1], "verify"))
     {
-        mt19937_init(&bi_rand, (unsigned)time(NULL));
+        romu_srand((rand_t)time(NULL));
         item_t *val = NULL;
         unsigned size = 0;
         if (argc >= 3)
