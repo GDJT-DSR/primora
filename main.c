@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
         {
             printf("seed参数错误\n");
         }
-        romu_srand(seed);
+        my_srand(seed);
         char *val = gen(digs);
         puts("\n\nResult:");
         puts(val);
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     }
     if (str_eq(argv[1], "verify"))
     {
-        romu_srand((rand_t)time(NULL));
+        my_srand((rand_t)time(NULL));
         item_t *val = NULL;
         unsigned size = 0;
         if (argc >= 3)

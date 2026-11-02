@@ -33,12 +33,12 @@ void bi_random(item_t *val, bi_size size)
     {
         // val[i] =
         // (unsigned)((rand() & 0xff) | ((rand() & 0xff) << 8) | ((rand() & 0xff) << 16) | ((rand() & 0xff) << 24));
-        val[i] = (item_t)romu_gen();
+        val[i] = (item_t)my_rand();
     }
     if (size.bits)
     {
         // val[size.limb] = mt19937_gen(m) & ((1u << size.bits) - 1);
-        val[size.limb] = (item_t)romu_gen();
+        val[size.limb] = (item_t)my_rand();
         val[size.limb] &= ((item_t)1 << size.bits) - 1;
     }
     else
