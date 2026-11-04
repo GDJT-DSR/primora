@@ -51,9 +51,6 @@ void bi_square(const item_t *restrict, unsigned, item_t *restrict, unsigned);
 // 求余数 l r l_size
 unsigned bi_remainder(item_t *, unsigned, unsigned);
 
-// val size size
-void bi_rshift(item_t *, unsigned, unsigned);
-
 char *bi_to_hex(const item_t *val, bi_size size);
 
 // 末尾0的个数，返回bit

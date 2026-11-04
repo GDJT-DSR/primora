@@ -78,18 +78,19 @@ void mont_redc(item_t *restrict val)
         }
 
         unsigned k = i + ms;
-        for (; car && k < ms * 2 + 1; ++k)
+        for (; car; ++k)
         {
             val[k] += car;
             car = val[k] < car;
         }
     }
-    bi_rshift(val, ms, 2 * ms + 1);
-    if (val[ms] || bi_cmp(val, mont_n, ms) >= 0)
+    // bi_rshift(val, ms, 2 * ms + 1);
+    item_t *nval = val + ms;
+    if (nval[ms] || bi_cmp(nval, mont_n, ms) >= 0)
     {
         // val[ms] = !bi_sub(val, mont_n, ms);
-        bi_add(val, mont_n_comp, ms);
-        val[ms] = 0;
+        bi_add(nval, mont_n_comp, ms);
+        nval[ms] = 0;
     }
 }
 
@@ -140,10 +141,12 @@ void mont_mul(item_t *restrict l, item_t *restrict r, item_t *restrict res)
 void mont_square(item_t *restrict a)
 {
     item_t *restrict tmp = mont_square_tmp;
-    bi_zero(tmp, 2 * mont_size + 1);
-    bi_square(a, mont_size, tmp, 2 * mont_size + 1);
+    unsigned ms = mont_size;
+    bi_zero(tmp, 2 * ms + 1);
+    bi_square(a, ms, tmp, 2 * ms + 1);
     mont_redc(tmp);
-    for (unsigned i = 0; i < mont_size; ++i)
+    tmp += ms;
+    for (unsigned i = 0; i < ms; ++i)
     {
         a[i] = tmp[i];
     }
@@ -289,5 +292,6 @@ void mont_clean(void)
     FREE_AND_CLEAR(mont_n_comp);
     FREE_AND_CLEAR(mont_one);
     FREE_AND_CLEAR(mont_ione);
+    FREE_AND_CLEAR(mont_square_tmp);
     FREE_AND_CLEAR(mont_square_tmp);
 }

@@ -35,38 +35,41 @@ int test(item_t *val, unsigned size)
 
     mont_init(val, size);
     item_t *tmp = bi_clone(val, size);
+    unsigned ms = mont_size;
 
     tmp[0] ^= 1u;
     bi_size end0_size = bi_end0(tmp, size);
     unsigned count = end0_size.bits + end0_size.limb * ITEM_SIZE;
     // bi_rshift(tmp, end0_size, size);
 
-    item_t *ar = bi_create(2 * mont_size + 1);
-    item_t *a = bi_create(2 * mont_size + 1);
+    item_t *ar = bi_create(2 * ms + 1);
+    item_t *a = bi_create(2 * ms + 1);
     for (unsigned t = 0; t < test_time; ++t)
     {
+        item_t *va = NULL;
         do
         {
-            bi_random(ar, (bi_size){.limb = mont_size, .bits = 0});
-            bi_copy(a, ar, mont_size);
+            bi_random(ar, (bi_size){.limb = ms, .bits = 0});
+            bi_copy(a, ar, ms);
             mont_redc(a);
-        } while (bi_cmp(a, tmp, mont_size) >= 0 || a[0] < 2);
+            va = a + ms;
+        } while ((va && bi_cmp(va, tmp, ms) >= 0) || va[0] < 2);
         printf("test%u: a=", t);
-        char *buf = bi_to_hex(a, (bi_size){.limb = mont_size, .bits = 0});
+        char *buf = bi_to_hex(va, (bi_size){.limb = ms, .bits = 0});
         puts(buf);
         free(buf);
         putchar('\n');
         mont_pow(ar, tmp, size, count);
-        if (!bi_cmp(ar, mont_one, mont_size) || !bi_cmp(ar, mont_ione, mont_size))
+        if (!bi_cmp(ar, mont_one, ms) || !bi_cmp(ar, mont_ione, ms))
             goto end_for;
         for (unsigned i = 1; i < count; ++i)
         {
             mont_square(ar);
-            if (!bi_cmp(ar, mont_ione, mont_size))
+            if (!bi_cmp(ar, mont_ione, ms))
             {
                 goto end_for;
             }
-            else if (!bi_cmp(ar, mont_one, mont_size))
+            else if (!bi_cmp(ar, mont_one, ms))
             {
                 goto end_no; // 写或不写那个可能更快一点？
             }
