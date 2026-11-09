@@ -101,6 +101,7 @@ char *gen(unsigned digs)
         do
             bi_random(result, size);
         while (!((result[size.limb - (size.bits == 0)] >> (size.bits ? size.bits - 4 : ITEM_SIZE - 4)) & 0xf));
+        result[0] |= 1;
         puts("try: ");
         char *buf = bi_to_hex(result, size);
         puts(buf);
