@@ -3,9 +3,9 @@ name: CMake on multiple platforms
 
 on:
   push:
-    branches: [ "main" ] # 根据你的分支名修改
+    branches: ["main"] # 根据你的分支名修改
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
@@ -43,29 +43,29 @@ jobs:
             c_compiler: cl
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-    - name: Set reusable strings
-      # 将构建目录路径设为步骤输出，方便后续复用
-      id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+      - name: Set reusable strings
+        # 将构建目录路径设为步骤输出，方便后续复用
+        id: strings
+        shell: bash
+        run: |
+          echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Configure CMake
-      # 配置 CMake。CMAKE_BUILD_TYPE 仅在单配置生成器（如 Make）下需要
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -S ${{ github.workspace }}
+      - name: Configure CMake
+        # 配置 CMake。CMAKE_BUILD_TYPE 仅在单配置生成器（如 Make）下需要
+        run: >
+          cmake -B ${{ steps.strings.outputs.build-output-dir }}
+          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -S ${{ github.workspace }}
 
-    - name: Build
-      # 构建项目。--config 对于 Windows 默认的 Visual Studio 多配置生成器是必需的
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+      - name: Build
+        # 构建项目。--config 对于 Windows 默认的 Visual Studio 多配置生成器是必需的
+        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
-    - name: Test
-      # 运行 CTest。--build-config 同样是 Windows 多配置生成器所必需的
-      working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      run: ctest --build-config ${{ matrix.build_type }} --output-on-failure
+      - name: Test
+        # 运行 CTest。--build-config 同样是 Windows 多配置生成器所必需的
+        working-directory: ${{ steps.strings.outputs.build-output-dir }}
+        run: ctest --build-config ${{ matrix.build_type }} --output-on-failure
