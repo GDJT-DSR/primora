@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
             break;
         }
         free(val);
-        return 0;
+        return res ? 0 : 2;
     }
 
     return 0;
