@@ -1,0 +1,71 @@
+# 适用于多平台 CMake 项目的起始工作流
+name: CMake on multiple platforms
+
+on:
+  push:
+    branches: [ "main" ] # 根据你的分支名修改
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      # 设为 false 可确保所有矩阵组合都跑完，便于一次性看到所有平台的反馈
+      fail-fast: false
+
+      # 矩阵配置：
+      # 1. Windows + MSVC (cl)
+      # 2. Linux + GCC (gcc/g++)
+      # 3. Linux + Clang (clang/clang++)
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        build_type: [Release]
+        c_compiler: [gcc, clang, cl]
+        include:
+          - os: windows-latest
+            c_compiler: cl
+            cpp_compiler: cl
+          - os: ubuntu-latest
+            c_compiler: gcc
+            cpp_compiler: g++
+          - os: ubuntu-latest
+            c_compiler: clang
+            cpp_compiler: clang++
+        exclude:
+          # 排除 Windows 上不使用的 GCC/Clang，以及 Linux 上不使用的 MSVC
+          - os: windows-latest
+            c_compiler: gcc
+          - os: windows-latest
+            c_compiler: clang
+          - os: ubuntu-latest
+            c_compiler: cl
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set reusable strings
+      # 将构建目录路径设为步骤输出，方便后续复用
+      id: strings
+      shell: bash
+      run: |
+        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+    - name: Configure CMake
+      # 配置 CMake。CMAKE_BUILD_TYPE 仅在单配置生成器（如 Make）下需要
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -S ${{ github.workspace }}
+
+    - name: Build
+      # 构建项目。--config 对于 Windows 默认的 Visual Studio 多配置生成器是必需的
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+
+    - name: Test
+      # 运行 CTest。--build-config 同样是 Windows 多配置生成器所必需的
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      run: ctest --build-config ${{ matrix.build_type }} --output-on-failure
