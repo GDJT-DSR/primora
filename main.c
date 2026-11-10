@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
             if (!fgets(buf, sizeof(buf), stdin))
             {
                 printf("读取失败\n");
-                return 2;
+                return 1;
             }
             for (char *p = buf; *p; ++p)
             {
@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
         if (!val)
         {
             printf("参数解析错误\n");
-            return 2;
+            return 1;
         }
         int res = test(val, size, opt.time);
         switch (res)
@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
             break;
         }
         free(val);
-        return !res;
+        return 0;
     }
 
     return 0;
