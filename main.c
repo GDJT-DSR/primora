@@ -178,8 +178,8 @@ int main(int argc, char *argv[])
     {
         item_t *val = NULL;
         unsigned size = 0;
-        if (opt.position && str_eq(opt.position, "-"))
-            val = bi_from_string(argv[2], &size);
+        if (opt.position && !str_eq(opt.position, "-"))
+            val = bi_from_string(opt.position, &size);
         else
         {
             char buf[32768];

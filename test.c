@@ -56,7 +56,6 @@ int test(item_t *val, unsigned size, unsigned time)
         char *buf = bi_to_hex(va, (bi_size){.limb = ms, .bits = 0});
         puts(buf);
         free(buf);
-        putchar('\n');
         mont_pow(ar, tmp, size, count);
         if (!bi_cmp(ar, mont_one, ms) || !bi_cmp(ar, mont_ione, ms))
             goto end_for;
