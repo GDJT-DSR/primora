@@ -5,9 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-unsigned test_time = 10;
-
-int test(item_t *val, unsigned size)
+int test(item_t *val, unsigned size, unsigned time)
 {
     bi_size size_detail = bi_get_size(val, size);
     if (size_detail.limb == 0)
@@ -44,7 +42,7 @@ int test(item_t *val, unsigned size)
 
     item_t *ar = bi_create(2 * ms + 1);
     item_t *a = bi_create(2 * ms + 1);
-    for (unsigned t = 0; t < test_time; ++t)
+    for (unsigned t = 0; t < time; ++t)
     {
         item_t *va = NULL;
         do
@@ -91,7 +89,7 @@ end_no:
     return 0;
 }
 
-char *gen(unsigned digs)
+char *gen(unsigned digs, unsigned time)
 {
     bi_size size = (bi_size){.limb = digs / (ITEM_SIZE / 4), .bits = 4 * (digs % (ITEM_SIZE / 4))};
     unsigned limbs = size.limb + 1;
@@ -105,7 +103,7 @@ char *gen(unsigned digs)
         puts("try: ");
         char *buf = bi_to_hex(result, size);
         puts(buf);
-        if (test(result, limbs))
+        if (test(result, limbs, time))
             return buf;
 
         free(buf);
