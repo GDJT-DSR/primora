@@ -18,7 +18,7 @@ int test(item_t *val, unsigned size)
         if (val[0] == 1)
             return 0;
         if (val[0] == 2)
-            return 1;
+            return 2;
     }
 
     if (!(val[0] & 1u))
@@ -27,7 +27,7 @@ int test(item_t *val, unsigned size)
     if (size_detail.limb == 0)
         for (unsigned i = 0; i < PRIMES_LEN; ++i)
             if (val[0] == primes[i])
-                return 1;
+                return 2;
 
     for (unsigned i = 0; i < PRIMES_LEN; ++i)
         if (bi_remainder(val, primes[i], size) == 0)

@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
         my_srand((rand_t)time(NULL));
         item_t *val = NULL;
         unsigned size = 0;
-        if (argc >= 3)
+        if (argc >= 3 && !str_eq(argv[2], "-"))
             val = bi_from_string(argv[2], &size);
         else
         {
@@ -82,6 +82,18 @@ int main(int argc, char *argv[])
         }
         int res = test(val, size);
         printf(res ? "可能是素数\n" : "合数\n");
+        switch (res)
+        {
+        case 0:
+            puts("合数");
+            break;
+        case 1:
+            puts("可能是素数");
+            break;
+        case 2:
+            puts("素数");
+            break;
+        }
         free(val);
         return !res;
     }
