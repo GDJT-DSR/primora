@@ -7,6 +7,11 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 project(primora DESCRIPTION "a verifier and generator of prime" LANGUAGES C)
 
+if(NOT MSVC)
+    # 覆盖 CMake Release 默认的 -O3；不绑定构建机 CPU，便于交叉编译和分发
+    set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG")
+endif()
+
 file(GLOB SOURCES CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/*.c")
 
 # add_compile_options(-fsanitize=address -g)
@@ -27,12 +32,8 @@ if(MSVC)
     )
 else()
     target_compile_options(primora PRIVATE
-        $<$<CONFIG:Release>:-O3 -march=native -funroll-loops -flto>
+        $<$<CONFIG:Release>:-funroll-loops>
         $<$<CONFIG:Debug>:-g -fno-omit-frame-pointer>
-    )
-
-    target_link_options(primora PRIVATE
-        $<$<CONFIG:Release>:-flto>
     )
 endif()
 

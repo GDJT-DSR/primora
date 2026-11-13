@@ -8,7 +8,7 @@
 - Montgomery 表示 + CIOS 模乘，模乘和模幂全程不做除法；
 - 17976 个小素数试除，先取出大部分合数，减少模幂的次数；
 - 滑动窗口模幂，通过预计算减少模乘次数；
-- CMake 构建，Release 默认 `-O3 -march=native -funroll-loops -flto`。
+- CMake 构建，GCC/Clang Release 默认 `-O2 -funroll-loops`，不绑定构建机 CPU；MSVC 仍为 `/O2 /GL` + `/LTCG`。
 
 ## 构建
 
